@@ -1,0 +1,37 @@
+﻿@inherits LayoutComponentBase
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+
+<style>
+    a:hover {
+        opacity : 0.8 ;
+    }
+    button:hover {
+       opacity : 0.8 ;
+    }
+</style>
+<div class="page" style="height : 100%">
+    <div class="sidebar fixed-top" style="height : 100%">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        </div>
+
+        <article class="" style="padding : 0px !important ; height : calc(100% - 4em);">
+            @Body
+        </article>
+    </main>
+</div>
+<footer style="height:40px; background-color :aquamarine;">
+
+</footer>
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>

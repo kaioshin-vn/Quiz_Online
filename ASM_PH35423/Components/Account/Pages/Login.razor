@@ -1,0 +1,133 @@
+﻿@page "/Account/Login"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using ASM_PH35423.Data;
+
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Log in</PageTitle>
+
+<style>
+    .radius {
+        border-radius: 10px;
+    }
+</style>
+
+<div class="px-5 pt-5" style="height : 100% ; background-image: url('/Img/login_Back.jpg');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+    <div class="rounded-3 row p-3" style="margin-top : 100px">
+        <div class="row">
+            <div class="col-md-2">
+
+            </div>
+            <div class="col-md-4 radius" style="background-color: rgba(255, 255, 255, 0.6); /* Đen với độ mờ 50% */ ; color:#000">
+                <section>
+                    <div class="mt-4">
+                        <StatusMessage Message="@errorMessage" />
+                    </div>
+                    <EditForm Model="Input" class="p-2" method="post" OnValidSubmit="LoginUser" FormName="login">
+                        <DataAnnotationsValidator />
+                        <h2 class="mt-2">Sử dụng tài khoản của bạn để đăng nhập</h2>
+                        <hr />
+                        <ValidationSummary  class="alert alert-info" />
+                        <div class="form-floating mb-3">
+                            <InputText @bind-Value="Input.Email" class="form-control radius" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                            <label for="email" class="form-label">Email</label>
+                        </div>
+                        <div class="form-floating mb-4">
+                            <InputText type="password" @bind-Value="Input.Password" class="form-control radius" autocomplete="current-password" aria-required="true" placeholder="password" />
+                            <label for="password" class="form-label">Mật khẩu</label>
+                        </div>
+                        <div class="checkbox mb-3">
+                            <label class="form-label">
+                                <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
+                                Nhớ tài khoản
+                            </label>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-100 mt-5 btn btn-lg btn-primary" style="border-radius : 15px ; background-color : palevioletred ;">Đăng nhập</button>
+                        </div>
+                        <div>
+                            <p class="mt-2">
+                                <a style="#000" href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Đăng ký tài khoản mới</a>
+                            </p>
+                        </div>
+                    </EditForm>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    public async Task LoginUser()
+    {
+        // This doesn't count login failures towards account lockout
+        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User logged in.");
+            RedirectManager.RedirectTo(ReturnUrl);
+        }
+        else if (result.RequiresTwoFactor)
+        {
+            RedirectManager.RedirectTo(
+                "Account/LoginWith2fa",
+                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+        }
+        else if (result.IsLockedOut)
+        {
+            Logger.LogWarning("User account locked out.");
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            errorMessage = "Email hoặc mật khẩu không chính xác";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Không được bỏ trống !")]
+        [EmailAddress(ErrorMessage = "Không đúng định dạng email !")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Không được bỏ trống !")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}

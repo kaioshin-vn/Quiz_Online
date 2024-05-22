@@ -1,0 +1,147 @@
+﻿@page "/Account/Register"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using ASM_PH35423.Data;
+
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Register</PageTitle>
+
+
+<div class="px-5 pt-5" style="height : 100% ; background-image: url('/Img/Back_gr_register.webp');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+    <div class="rounded-3 row p-3" style="margin-top : 100px">
+
+        <div class="col-md-7 col-md-offset-2" style="text-align : center;">
+            <img style="width : 200px" src="\Img\Logo1.png" />
+            <h5 class = "mt-5" style="color:lightpink ; font-size:larger">Cộng đồng thi trắc nghiệm số 1 Việt Nam</h5>
+        </div>
+
+        <div class="col-md-5" style="text-align : center;">
+            <EditForm Model="Input" style="width : 80%; " asp-route-returnUrl="@ReturnUrl" method="post"  OnValidSubmit="RegisterUser" FormName="register">
+                <DataAnnotationsValidator/>
+                <h2 style="color: #fff">Đăng ký một lần,dùng ở mọi nơi</h2>
+                <hr />
+                <ValidationSummary style="text-align:left" class="alert alert-info " />
+                <div class="form-floating mb-4">
+                    <InputText @bind-Value="Input.Email" style="border-radius:10px ;" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <label for="email">Email</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <InputText type="password" @bind-Value="Input.Password" style="border-radius:10px ;" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <label for="password">Mật khẩu</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" style="border-radius:10px ;" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <label for="confirm-password">Nhập lại mật khẩu</label>
+                </div>
+                <button type="submit" class="w-100 btn mt-5 btn-lg" style="border-radius : 15px;background-color : lightgreen ; color : #fff">Đăng ký</button>
+            </EditForm>
+        </div>
+
+    </div>
+</div>
+
+@code {
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = CreateUser();
+
+        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        var emailStore = GetEmailStore();
+        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        var result = await UserManager.CreateAsync(user, Input.Password);
+        
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        Logger.LogInformation("User created a new account with password.");
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        {
+            RedirectManager.RedirectTo(
+                "Account/RegisterConfirmation",
+                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+        }
+
+
+        await SignInManager.SignInAsync(user, isPersistent: false);
+        RedirectManager.RedirectTo(ReturnUrl);
+    }
+
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return Activator.CreateInstance<ApplicationUser>();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+        }
+    }
+
+    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    {
+        if (!UserManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("The default UI requires a user store with email support.");
+        }
+        return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+
+    private sealed class InputModel
+    {
+        [Required (ErrorMessage ="Không được bỏ trống email !")]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Không được bỏ trống !")]
+        [StringLength(100, ErrorMessage = "Ít nhất 4 kí tự", MinimumLength = 4)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = "";
+
+        [Required(ErrorMessage = "Không được bỏ trống !")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "Mật khẩu không khớp")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

@@ -1,0 +1,211 @@
+﻿@page "/Exam/{IdExam:guid}"
+@using ASM_PH35423.Data
+@using ASM_PH35423.Data.Tables
+@using ASM_PH35423.StaticClass
+@using Microsoft.AspNetCore.Identity
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using Newtonsoft.Json
+@using System.Net.Http.Headers
+
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+
+@if (Exam == null)
+{
+    <ASM_PH35423.Components.ComponentCustom.Loading></ASM_PH35423.Components.ComponentCustom.Loading>
+}
+else
+{
+    <MudContainer Style="background-color: darkgrey ; height: 100%" Class="pt-5" Fixed="true">
+
+        <MudGrid>
+            <MudItem Style="margin : auto" xs="12" sm="9">
+                <MudPaper Class="pa-4">
+                    @if (Exam.IsOpen)
+                    {
+                        <MudButton Class="my-3" Variant="Variant.Filled" EndIcon="@Icons.Material.TwoTone.NotStarted" Color="Color.Info">Mở bài thi</MudButton>
+                        <MudButton Class="my-3" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Cancel" Style="background-color:red ; color:#fff;">Đóng bài thi</MudButton>
+                    }
+                    <MudContainer Class="p-0 d-flex align-items-end" MaxWidth="MaxWidth.ExtraExtraLarge">
+
+                        <MudTooltip Class="d-inline" @onclick="HandleShowAddImg" Text="Thay đổi ảnh">
+                            <MudImage Src="@imagePreview" Alt="Mony the dog" Height="100" Class="rounded-lg cursor-pointer border-1" />
+                        </MudTooltip>
+                        @if (IsAddImg)
+                        {
+                            <MudFileUpload Class="d-inline ms-3" T="IBrowserFile" FilesChanged="UploadFiles">
+                                <ButtonTemplate>
+                                    <MudButton HtmlTag="label"
+                                               Variant="Variant.Filled"
+                                               Color="Color.Info"
+                                               StartIcon="@Icons.Material.Filled.CloudUpload"
+                                               for="@context.Id">
+                                        Upload Files
+                                    </MudButton>
+                                </ButtonTemplate>
+                            </MudFileUpload>
+                        }
+                    </MudContainer>
+                    <MudForm @ref="Form" @bind-IsValid="IsValid">
+                        <MudTextField T="string" @bind-Value="Exam.Title" Label="Tiêu đề" Required="true" RequiredError="Chưa nhập tiêu đề" />
+                        <MudTextField T="string" @bind-Value="Exam.Descripton" Label="Mô tả" Required="true" RequiredError="Hãy nhập mô tả" />
+                        <MudTextField T="string" @bind-Value="Exam.Type" Label="Thể loại" Required="true" RequiredError="Không bỏ trống thể loại" />
+                        <MudTooltip Text="Chọn chế độ bài thi">
+                            <MudSwitch @bind-Value="@IsOpen" Color="Color.Info" UnCheckedColor="Color.Dark">Kiểm tra</MudSwitch>
+                        </MudTooltip>
+
+                        <MudText>Ngày tạo : <span style="color:deepskyblue">@Exam.CreateDate.Day-@Exam.CreateDate.Month-@Exam.CreateDate.Year</span></MudText>
+                        <div class="d-flex align-center justify-content-end">
+                            <MudButton OnClick="HandleSaveChange" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info" Size="Size.Medium">Lưu</MudButton>
+                        </div>
+                    </MudForm>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid>
+            <MudItem Style="margin : auto" xs="12" sm="9">
+                <MudPaper Class="pa-4">
+                    @if (Exam.IsOpen)
+                    {
+                        <MudButton Class="my-2" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Send" Color="Color.Info">Mở bài thi</MudButton>
+                    }
+                    <MudContainer Class="p-0 d-flex align-items-end" MaxWidth="MaxWidth.ExtraExtraLarge">
+
+                        <MudTooltip Class="d-inline" @onclick="HandleShowAddImg" Text="Thay đổi ảnh">
+                            <MudImage Src="@imagePreview" Alt="Mony the dog" Height="100" Class="rounded-lg cursor-pointer border-1" />
+                        </MudTooltip>
+                        @if (IsAddImg)
+                        {
+                            <MudFileUpload Class="d-inline ms-3" T="IBrowserFile" FilesChanged="UploadFiles">
+                                <ButtonTemplate>
+                                    <MudButton HtmlTag="label"
+                                               Variant="Variant.Filled"
+                                               Color="Color.Info"
+                                               StartIcon="@Icons.Material.Filled.CloudUpload"
+                                               for="@context.Id">
+                                        Upload Files
+                                    </MudButton>
+                                </ButtonTemplate>
+                            </MudFileUpload>
+                        }
+                    </MudContainer>
+                    <MudForm @ref="Form" @bind-IsValid="IsValid">
+                        <MudTextField T="string" @bind-Value="Exam.Title" Label="Tiêu đề" Required="true" RequiredError="Chưa nhập tiêu đề" />
+                        <MudTextField T="string" @bind-Value="Exam.Descripton" Label="Mô tả" Required="true" RequiredError="Hãy nhập mô tả" />
+                        <MudTextField T="string" @bind-Value="Exam.Type" Label="Thể loại" Required="true" RequiredError="Không bỏ trống thể loại" />
+                        <MudTooltip Text="Chọn chế độ bài thi">
+                            <MudSwitch @bind-Value="@IsOpen" Color="Color.Info" UnCheckedColor="Color.Dark">Kiểm tra</MudSwitch>
+                        </MudTooltip>
+
+                        <MudText>Ngày tạo : <span style="color:deepskyblue">@Exam.CreateDate.Day-@Exam.CreateDate.Month-@Exam.CreateDate.Year</span></MudText>
+                        <div class="d-flex align-center justify-content-end">
+                            <MudButton OnClick="HandleSaveChange" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info" Size="Size.Medium">Lưu</MudButton>
+                        </div>
+                    </MudForm>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+    </MudContainer>
+
+
+
+
+
+
+
+
+}
+
+@code {
+    [Parameter]
+    public Guid IdExam { get; set; }
+
+    bool IsOpen { get; set; }
+    bool IsAddImg { get; set; }
+    bool IsValid { get; set; }
+
+
+    IBrowserFile userFile { get; set; }
+
+    Exam Exam { get; set; }
+
+    private string imagePreview;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetAsync($"/GetExamDetail/{IdExam}");
+        if (response.IsSuccessStatusCode)
+        {
+            Exam = JsonConvert.DeserializeObject<Exam>(await response.Content.ReadAsStringAsync());
+            IsOpen = Exam.IsOpen;
+            imagePreview = Exam.Img;
+        }
+
+    }
+    private async Task UploadFiles(IBrowserFile file)
+    {
+        userFile = file;
+        IsValid = true;
+        using (var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024))
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memoryStream);
+                var buffer = memoryStream.ToArray();
+
+                // Chuyển đổi buffer sang base64 string
+                imagePreview = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+            }
+        }
+
+
+
+    }
+
+    void HandleShowAddImg()
+    {
+        IsAddImg = true;
+    }
+
+    private async Task HandleSaveChange()
+    {
+        if (IsValid)
+        {
+            Exam.IsOpen = IsOpen;
+            var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+            if (userFile != null)
+            {
+                var formFile = await userFile.ToFormFile();
+                var content = new MultipartFormDataContent();
+                Console.WriteLine(formFile.Name);
+                var fileContent = new StreamContent(userFile.OpenReadStream());
+
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(formFile.ContentType);
+
+                content.Add(fileContent, "\"files\"", formFile.FileName);
+
+                var responseUpLoad = await _httpClient.PostAsync("/FileUpLoad", content);
+                userFile = null;
+                if (responseUpLoad.IsSuccessStatusCode)
+                {
+                    var urlImg = await responseUpLoad.Content.ReadAsStringAsync();
+                    Exam.Img = urlImg;
+                }
+            }
+            _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+            var response = await _httpClient.PatchAsJsonAsync($"/UpdateExam", Exam);
+        }
+    }
+}
+@code {
+    MudForm Form = new MudForm();
+}
