@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ASM_PH35423.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class create_db : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -82,10 +82,10 @@ namespace ASM_PH35423.Migrations
                     Descripton = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Img = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Time = table.Column<int>(type: "int", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     IsOpen = table.Column<bool>(type: "bit", nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Mode = table.Column<int>(type: "int", nullable: false)
+                    Code = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -193,7 +193,7 @@ namespace ASM_PH35423.Migrations
                     TimeStart = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TimeEnd = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Mode = table.Column<int>(type: "int", nullable: false),
-                    Scores = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Scores = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -225,7 +225,8 @@ namespace ASM_PH35423.Migrations
                     Answer3 = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Answer4 = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Answer5 = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    NumberRight = table.Column<int>(type: "int", nullable: false)
+                    isMultiple = table.Column<bool>(type: "bit", nullable: false),
+                    NumberRight = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {

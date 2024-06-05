@@ -19,8 +19,8 @@ namespace ASM_PH35423.Data.Tables
         public string Type { get; set; }
 
         public string Img { get; set; }
+        public int Time { get; set; }   
 
-        public ModeExam Mode { get; set; }
         public bool IsDeleted { get; set; } = false;
 
         public bool IsOpen { get; set; } = false;

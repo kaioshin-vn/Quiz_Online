@@ -1,0 +1,70 @@
+﻿@page "/ListExamUser"
+@using ASM_PH35423.Components.ComponentCustom
+@using ASM_PH35423.Data
+@using ASM_PH35423.Data.DTO
+@using ASM_PH35423.Data.Tables
+@using Microsoft.AspNetCore.Identity
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using Newtonsoft.Json
+
+
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
+
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+
+@if (ListExams == null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <MudPaper Class="d-flex justify-end my-4" Elevation="0">
+            
+        </MudPaper>
+        @if (ListExams.Count == 0)
+        {
+            <MudAlert Style="width : 550px;" Severity="Severity.Info" Variant="Variant.Filled">Hiện chưa có bài thi nào</MudAlert>
+        }
+        else
+        {
+            foreach (var item in ListExams)
+            {
+                <p>
+                    <a class="my-4" href="/ExamEntry/@item.Id">@item.Id</a>
+                   
+                </p>
+            }
+        }
+    </MudContainer>
+}
+@code {
+    List<Exam> ListExams;
+
+    Guid id;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExam();
+    }
+
+
+    private async Task LoadExam()
+    {
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetAsync($"/GetAllExams");
+
+        if (response.IsSuccessStatusCode)
+        {
+            ListExams = JsonConvert.DeserializeObject<List<Exam>>(await response.Content.ReadAsStringAsync());
+        }
+    }
+
+
+}

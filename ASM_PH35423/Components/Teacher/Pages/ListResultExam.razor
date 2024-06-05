@@ -1,4 +1,4 @@
-﻿@page "/StoreExam"
+﻿@page "/ListResultExam"
 @using ASM_PH35423.Components.ComponentCustom
 @using ASM_PH35423.Data
 @using ASM_PH35423.Data.DTO
@@ -18,7 +18,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 
-@if (ListExams == null)
+@if (ListHistory == null)
 {
     <Loading></Loading>
 }
@@ -30,33 +30,27 @@ else
                 <MudFab @onclick="AddExamHandle" EndIcon="@Icons.Material.Filled.Add" Color="Color.Secondary" />
             </MudTooltip>
         </MudPaper>
-        @if (ListExams.Count == 0)
+        @if (ListHistory.Count == 0)
         {
-            <MudAlert Style="width : 550px;" Severity="Severity.Info" Variant="Variant.Filled">Bạn chưa có bài thi nào</MudAlert>
+            <MudAlert Style="width : 550px;" Severity="Severity.Info" Variant="Variant.Filled">Bạn chưa tạo bài thi nào, tạo bài thi mới <NavLink href="/StoreExam"><span style="text-decoration:underline;">Tại đây</span></NavLink></MudAlert>
         }
         else
         {
-            foreach (var item in ListExams)
+            foreach (var item in ListHistory)
             {
                 <p>
-                    <a class="my-4" href="/Exam/@item.Id">@item.Id</a>
-                    <MudButton @onclick="() => DeleteExamHandle(item.Id)" Variant="Variant.Filled" Color="Color.Error">Xóa</MudButton>
+                    <a class="my-4" href="/ResultExam/@item.Id">@item.Id</a>
                 </p>
             }
         }
     </MudContainer>
 }
 @code {
-    List<Exam> ListExams;
+    List<ExamResult> ListHistory;
 
     Guid id;
 
     protected override async Task OnInitializedAsync()
-    {
-        await LoadExam();
-    }
-
-    private async Task AddExamHandle()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -67,14 +61,14 @@ else
 
 
         var _http = HttpClientFactory.CreateClient("MyHttpClient");
-        var data = await _http.PostAsJsonAsync("/AddExam", idUser);
+        var data = await _http.GetStringAsync($"/GetListResultExam/{idUser}");
 
-        if (data.IsSuccessStatusCode)
-        {
-            var strId = await data.Content.ReadAsStringAsync();
-            var idExam = Guid.Parse(strId.Trim('"'));
-            Navigation.NavigateTo("/Exam/" + idExam);
-        }
+        ListHistory = JsonConvert.DeserializeObject<List<ExamResult>>(data);
+    }
+
+    private async Task AddExamHandle()
+    {
+        
     }
 
     private async Task DeleteExamHandle(Guid id)
@@ -85,22 +79,6 @@ else
         parameters.Add(x => x.Color, Color.Error);
 
         var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
-
-
-
-        var result = await DialogService.Show<Dialog>("Xác nhận xóa", parameters, options).Result;
-        if (result.Data != null)
-        {
-            if ((bool)result.Data)
-            {
-                var _http = HttpClientFactory.CreateClient("MyHttpClient");
-                var data = await _http.DeleteAsync("/DeleteExam/" + id);
-                Snackbar.Add("Xóa bài thi thành công", Severity.Success);
-                ListExams = null;
-
-                await LoadExam();
-            }
-        }
         
     }
 
@@ -115,10 +93,7 @@ else
         var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
         var response = await _httpClient.GetAsync($"/GetExams/{idUser}");
 
-        if (response.IsSuccessStatusCode)
-        {
-            ListExams = JsonConvert.DeserializeObject<List<Exam>>(await response.Content.ReadAsStringAsync());
-        }
+       
     }
 
 

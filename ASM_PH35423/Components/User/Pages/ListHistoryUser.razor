@@ -1,0 +1,75 @@
+﻿@page "/History"
+
+@using ASM_PH35423.Components.ComponentCustom
+@using System.Text.RegularExpressions
+@using ASM_PH35423.Data.DTO
+@using System.ComponentModel.DataAnnotations
+@using Newtonsoft.Json
+@using System.Net.Http.Headers
+@using System.Timers;
+
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject IDialogService DialogService
+
+@inject ISnackbar Snackbar
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (ListHistory == null)
+{
+    <Loading></Loading>
+}
+else
+{
+    @if (ListHistory.Count == 0)
+    {
+        <div class="px-5 pt-3" style="height : 100% ; background-image: url('/Img/spiderman-ps4-minimal-fb.jpg');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+            <MudAlert Style="width : 550px;" Severity="Severity.Info" Variant="Variant.Filled">Bạn chưa tham gia bài thi nào</MudAlert>
+        </div>
+    }
+    else
+    {
+        <MudContainer MaxWidth="MaxWidth.Large">
+            <MudPaper Class="d-flex justify-end my-4" Elevation="0">
+
+            </MudPaper>
+
+
+            @foreach (var item in ListHistory)
+            {
+            <p>
+                    <a class="my-4" href="/ExamHistory/@item.Id">@item.Id</a>
+            </p>
+            }
+        </MudContainer>
+    }
+}
+@code {
+    List<ExamHistory> ListHistory;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var userCurrent = await UserManager.GetUserAsync(user);
+        var idUser = userCurrent.Id;
+
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetAsync($"/GetListHistoryUser/{idUser}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            ListHistory = JsonConvert.DeserializeObject<List<ExamHistory>>(await response.Content.ReadAsStringAsync());
+        }
+    }
+
+}

@@ -1,0 +1,460 @@
+﻿@page "/EditQuestion/{idQuestion:guid}"
+@page "/EditQuestion/{idExam:guid}/{State?}"
+
+@using ASM_PH35423.Components.ComponentCustom
+@using System.Net.Http.Headers
+
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<style>
+    .radius {
+        border-radius: 10px;
+    }
+</style>
+@if (Question == null)
+{
+    <ASM_PH35423.Components.ComponentCustom.Loading></ASM_PH35423.Components.ComponentCustom.Loading>
+}
+else
+{
+    <div class="px-5 pt-3" style="height : 100% ; background-image: url('/Img/back_question.webp');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+
+        <div class="radius border mt-3" style=" height: 94%; width:100%;">
+
+            <div class="px-4">
+                <div class="d-flex align-center justify-space-between" style="margin-top:20px;">
+                    <MudFab OnClick="BackToListQuestion" Color="Color.Dark" StartIcon="@Icons.Material.Filled.KeyboardBackspace" />
+                    <MudButton Variant="Variant.Filled" OnClick="SaveChanges" EndIcon="@Icons.Material.Filled.Save" Style="background-color: lawngreen; color: white;font-size:larger;">
+                        Lưu
+                    </MudButton>
+                </div>
+
+                <MudGrid>
+                    <MudItem Style="margin : auto" xs="12" sm="10">
+                        <MudPaper Class="pa-2" Elevation="3">
+                            <MudTooltip Text="Thêm ảnh">
+                                <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+                                    <ButtonTemplate>
+                                        <MudFab HtmlTag="label"
+                                                Color="Color.Secondary"
+                                                EndIcon="@Icons.Material.Filled.AttachFile"
+                                                for="@context.Id" />
+                                    </ButtonTemplate>
+                                </MudFileUpload>
+                            </MudTooltip>
+                            @if (IsHasImg)
+                            {
+                                <MudTooltip @onclick="DeleteImg" Text="Xóa ảnh">
+                                    <MudFab Class="ms-2" HtmlTag="label"
+                                            Color="Color.Error"
+                                            EndIcon="@Icons.Material.Filled.Cancel" />
+                                </MudTooltip>
+                            }
+
+                            <MudForm @ref="Form" @bind-IsValid="IsValid">
+                                <div class="d-flex mt-2 align-items-center gap-4 justify-content-between">
+
+                                    @if (IsHasImg)
+                                    {
+                                        <div class="flex-grow-0">
+                                            <MudImage Src="@Img" Alt="Mony the dog" Height="140" Class="rounded-lg cursor-pointer border-1" />
+                                        </div>
+                                    }
+                                    <MudTextField @bind-Value="Question.ContentQuestion" Class="flex-grow-1" T="string" Label="Câu hỏi" Variant="Variant.Filled" Required="true" Lines="4" Style="font-size : 20px;font-weight:600;" RequiredError="Không bỏ trống câu hỏi" />
+
+                                </div>
+
+                                <div class="d-flex mt-5 align-items-center gap-4 justify-content-between">
+                                    @foreach (var item in ListAnswer)
+                                    {
+                                        <MudPaper Class="flex-grow-1 py-2" Style="background-color:deepskyblue;color:#fff" Elevation="3">
+                                            <div class="d-flex justify-content-between">
+                                                @if (ListAnswer.Count > 2)
+                                                {
+                                                    <MudIconButton OnClick="() => DeleteAnswer(item)" Icon="@Icons.Material.Filled.Delete" aria-label="delete"></MudIconButton>
+                                                }
+                                                <MudCheckBox @bind-Value="item.isRight" @onclick="() => ChangeRightAnswer(item)" Color="Color.Success"></MudCheckBox>
+                                            </div>
+                                            <MudTextField @bind-Value="item.AnswerContent" Style="color : #fff" Class="px-2" T="string" Variant="Variant.Filled" Lines="5" Required="true" RequiredError="Không bỏ trống đáp án" Placeholder="Nhập đáp án" />
+                                        </MudPaper>
+                                    }
+                                    @if (ListAnswer.Count < 5)
+                                    {
+                                        <MudTooltip Text="Thêm 1 đáp án">
+                                            <MudIconButton OnClick="AddAnswer" Class="flex-grow-0" Size="Size.Large" Icon="@Icons.Material.Filled.AddCircle" Color="Color.Tertiary"></MudIconButton>
+                                        </MudTooltip>
+                                    }
+
+                                </div>
+
+                                <MudTooltip>
+                                    <MudSwitch Class="my-2" @bind-Value="Question.isMultiple" @onclick="() => ChangeMultiple(Question.isMultiple)" Color="Color.Info" UnCheckedColor="Color.Dark">Nhiều đáp án</MudSwitch>
+                                </MudTooltip>
+
+                            </MudForm>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid idQuestion { get; set; }
+
+    [Parameter]
+    public Guid idExam { get; set; }
+
+    [Parameter]
+    public string? State { get; set; }
+
+    Question Question { get; set; }
+
+    bool IsValid { get; set; }
+
+    bool IsHasImg { get; set; }
+
+    string Img { get; set; }
+
+    MudForm Form = new MudForm();
+
+    List<Answer> ListAnswer = new List<Answer>();
+
+    List<int> NumbersRight = new List<int>();
+
+    IBrowserFile browserFile;
+
+
+    public class Answer()
+    {
+        public int Index { get; set; }
+
+        public string AnswerContent { get; set; }
+
+        public bool isRight { get; set; }
+    }
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (State != null)
+        {
+            Question = new Question();
+            Question.IdExam = idExam;
+            Question.Img = "";
+            for (int i = 1; i < 5; i++)
+            {
+                var answer = new Answer();
+                answer.AnswerContent = "";
+                answer.Index = i;
+                ListAnswer.Add(answer);
+            }
+        }
+        else
+        {
+            var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+            var response = await _httpClient.GetAsync($"/GetDetailQuestion/" + idQuestion);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Question = JsonConvert.DeserializeObject<Question>(await response.Content.ReadAsStringAsync());
+                var listContentAnwser = new List<string>();
+                listContentAnwser.Add(Question.Answer1);
+                listContentAnwser.Add(Question.Answer2);
+                listContentAnwser.Add(Question.Answer3);
+                listContentAnwser.Add(Question.Answer4);
+                listContentAnwser.Add(Question.Answer5);
+                var listNumberRight = Question.NumberRight.Split('_');
+                var count = 1;
+                foreach (var item in listContentAnwser)
+                {
+                    if (item != "")
+                    {
+                        var answer = new Answer();
+                        answer.Index = count;
+                        if (count == 1)
+                        {
+                            answer.AnswerContent = Question.Answer1;
+                        }
+                        else if (count == 2)
+                        {
+                            answer.AnswerContent = Question.Answer2;
+                        }
+                        else if (count == 3)
+                        {
+                            answer.AnswerContent = Question.Answer3;
+                        }
+                        else if (count == 4)
+                        {
+                            answer.AnswerContent = Question.Answer4;
+                        }
+                        else if (count == 5)
+                        {
+                            answer.AnswerContent = Question.Answer5;
+                        }
+                        answer.isRight = listNumberRight.Any(a => a == count.ToString());
+                        ListAnswer.Add(answer);
+                        count++;
+                    }
+                }
+                foreach (var item in listNumberRight)
+                {
+                    NumbersRight.Add(Convert.ToInt16(item));
+                }
+                if (Question.Img != "")
+                {
+                    IsHasImg = true;
+                    Img = Question.Img;
+                }
+
+
+            }
+        }
+    }
+
+    void AddAnswer()
+    {
+        var answer = new Answer();
+        answer.AnswerContent = "";
+        answer.Index = ListAnswer.Count + 1;
+        ListAnswer.Add(answer);
+    }
+
+    void DeleteAnswer(Answer answer)
+    {
+        foreach (var item in ListAnswer)
+        {
+            if (item.Index > answer.Index)
+            {
+                item.Index -= 1;
+            }
+        }
+        ListAnswer.Remove(answer);
+        if (String.IsNullOrEmpty(answer.AnswerContent))
+        {
+            Form.ResetValidation();
+        }
+    }
+    void UpdateIndex()
+    {
+
+    }
+
+    void ChangeRightAnswer(Answer answer)
+    {
+        if (!Question.isMultiple)
+        {
+            if (!answer.isRight)
+            {
+                foreach (var item in ListAnswer)
+                {
+                    if (item.Index != answer.Index)
+                    {
+                        item.isRight = false;
+                    }
+                }
+            }
+
+        }
+    }
+
+    void ChangeMultiple(bool stateMultiple)
+    {
+        if (stateMultiple)
+        {
+            Console.WriteLine(ListAnswer.Where(a => a.isRight == true).Count().ToString());
+            if (ListAnswer.Where(a => a.isRight == true).Count() > 1)
+            {
+                foreach (var item in ListAnswer)
+                {
+                    if (item.Index == 1)
+                    {
+                        item.isRight = true;
+                        continue;
+                    }
+                    item.isRight = false;
+                }
+            }
+        }
+    }
+    async Task BackToListQuestion()
+    {
+        if (Form.IsTouched)
+        {
+            var parameters = new DialogParameters<Dialog>();
+            parameters.Add(x => x.ContentText, "Bạn chưa lưu thay đổi, bạn thực sự muốn rời đi?");
+            parameters.Add(x => x.ButtonText, "Rời đi");
+            parameters.Add(x => x.Color, Color.Warning);
+
+            var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+            var result = await DialogService.Show<Dialog>("Xác nhận", parameters, options).Result;
+            if (result.Data != null)
+            {
+                if ((bool)result.Data)
+                {
+                    Navigation.NavigateTo("/Exam/" + Question.IdExam);
+                }
+            }
+        }
+        else
+        {
+            Navigation.NavigateTo("/Exam/" + Question.IdExam);
+        }
+    }
+
+    async Task SaveChanges()
+    {
+        Form.Validate();
+        if (!Form.IsValid)
+        {
+            Snackbar.Add("Hãy điền đầy đủ thông tin!", Severity.Error, (config) =>
+            {
+                config.VisibleStateDuration = 2000;
+            });
+        }
+        else
+        {
+            if (ListAnswer.Where(a => a.isRight == true).Count() < 1)
+            {
+                Snackbar.Add("Chưa chọn đáp án đúng!", Severity.Error, (config) =>
+            {
+                config.VisibleStateDuration = 2000;
+                return;
+            });
+            }
+
+            else
+            {
+                var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+
+                var listNumberRight = ListAnswer.Where(a => a.isRight == true).Select(a => a.Index.ToString());
+                Question.NumberRight = String.Join("_", listNumberRight);
+
+                if (browserFile != null)
+                {
+                    var formFile = await browserFile.ToFormFile();
+                    var content = new MultipartFormDataContent();
+                    Console.WriteLine(formFile.Name);
+                    var fileContent = new StreamContent(browserFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(formFile.ContentType);
+
+                    content.Add(fileContent, "\"files\"", formFile.FileName);
+
+                    var responseUpLoad = await _httpClient.PostAsync("/FileUpLoad", content);
+                    browserFile = null;
+                    if (responseUpLoad.IsSuccessStatusCode)
+                    {
+                        var urlImg = await responseUpLoad.Content.ReadAsStringAsync();
+                        Question.Img = urlImg;
+                    }
+                }
+                HanldeAnswer();
+                HttpResponseMessage response;
+
+                if (State != null)
+                {
+                    
+                    response = await _httpClient.PostAsJsonAsync($"/CreateQuestions", Question);
+                }
+                else
+                {
+                    response = await _httpClient.PatchAsJsonAsync($"/UpdateQuestion", Question);
+                }
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Navigation.NavigateTo("/Exam/" + Question.IdExam);
+                }
+            }
+        }
+    }
+
+    void HanldeAnswer()
+    {
+        for (int i = 1; i <= 5; i++)
+        {
+            if (ListAnswer.Count >= i)
+            {
+                i--;
+                if (ListAnswer[i].Index == 1)
+                {
+                    Question.Answer1 = ListAnswer[i].AnswerContent;
+                }
+                else if (ListAnswer[i].Index == 2)
+                {
+                    Question.Answer2 = ListAnswer[i].AnswerContent;
+                }
+                else if (ListAnswer[i].Index == 3)
+                {
+                    Question.Answer3 = ListAnswer[i].AnswerContent;
+                }
+                else if (ListAnswer[i].Index == 4)
+                {
+                    Question.Answer4 = ListAnswer[i].AnswerContent;
+                }
+                else if (ListAnswer[i].Index == 5)
+                {
+                    Question.Answer5 = ListAnswer[i].AnswerContent;
+                }
+                i++;
+            }
+            else
+            {
+                if (i == 3)
+                {
+                    Question.Answer3 = "";
+                }
+                else if (i == 4)
+                {
+                    Question.Answer4 = "";
+                }
+                else if (i == 5)
+                {
+                    Question.Answer5 = "";
+                }
+            }
+        }
+    }
+
+    void DeleteImg()
+    {
+        browserFile = null;
+        IsHasImg = false;
+        Question.Img = "";
+    }
+
+    async Task UploadFiles(IBrowserFile file)
+    {
+        browserFile = file;
+        using (var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024))
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memoryStream);
+                var buffer = memoryStream.ToArray();
+
+                // Chuyển đổi buffer sang base64 string
+                Img = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+                IsHasImg = true;
+            }
+        }
+    }
+
+}

@@ -21,10 +21,11 @@ namespace ASM_PH35423.Data.Tables
         public string Answer4 { get; set; }
         public string Answer5 { get; set; }
 
-        public int NumberRight { get; set; }
+        public bool isMultiple { get; set; }
+        public string NumberRight { get; set; }
 
 
         [ForeignKey("IdExam")]
-        public Exam Exam { get; set; }
+        public Exam? Exam { get; set; }
     }
 }

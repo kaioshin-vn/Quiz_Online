@@ -1,6 +1,10 @@
-﻿@implements IDisposable
+﻿@using ASM_PH35423.Components.ComponentCustom
+@implements IDisposable
 
+@inject IDialogService DialogService
 @inject NavigationManager NavigationManager
+@inject SignInManager<ApplicationUser> _signInManager
+@inject IHttpClientFactory HttpClientFactory
 
 <div class=" navbar navbar-dark">
     <div class="container-fluid">
@@ -14,32 +18,47 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        <AuthorizeView >
+        <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="/StoreExam">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span>Thư viện của bạn
+                        <MudIconButton Icon="@Icons.Material.Filled.LocalLibrary" Color="Color.Tertiary" Size="Size.Small" />Thư viện của bạn
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/ListExamUser">
+                        <MudIconButton Icon="@Icons.Material.Filled.FormatListBulleted" Color="Color.Tertiary" Size="Size.Small" />Danh sách bài thi
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/History">
+                        <MudIconButton Icon="@Icons.Material.Filled.History" Color="Color.Tertiary" Size="Size.Small" />Lịch sử thi
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/ListResultExam">
+                        <MudIconButton Icon="@Icons.Material.Filled.SportsScore" Color="Color.Tertiary" Size="Size.Small" />Kết quả bài thi
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button  type="submit" class="nav-link d-flex justify-content-start">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span>Đăng xuất
+                        <input type="hidden" name="ReturnUrl" value="Account/Login" />
+                        <button type="submit" class="nav-link d-flex justify-content-start">
+                            <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Tertiary" Size="Size.Small" />Đăng xuất
                         </button>
                     </form>
                 </div>
             </Authorized>
             <NotAuthorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Đăng ký
+                    <NavLink class="nav-link">
+                        <MudIconButton Icon="@Icons.Material.Filled.AppRegistration" Color="Color.Tertiary" Size="Size.Small" /> Đăng ký
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Đăng nhập
+                        <MudIconButton Icon="@Icons.Material.Filled.Login" Color="Color.Tertiary" Size="Size.Small" /> Đăng nhập
                     </NavLink>
                 </div>
             </NotAuthorized>
@@ -49,6 +68,8 @@
 
 @code {
     private string? currentUrl;
+
+    ElementReference Form;
 
     protected override void OnInitialized()
     {
@@ -61,6 +82,7 @@
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
         StateHasChanged();
     }
+
 
     public void Dispose()
     {

@@ -1,4 +1,5 @@
 ﻿@page "/Exam/{IdExam:guid}"
+@using ASM_PH35423.Components.ComponentCustom
 @using ASM_PH35423.Data
 @using ASM_PH35423.Data.Tables
 @using ASM_PH35423.StaticClass
@@ -12,6 +13,7 @@
 @inject IDialogService DialogService
 @inject IHttpClientFactory HttpClientFactory
 
+@inject ISnackbar Snackbar
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -29,53 +31,21 @@ else
                 <MudPaper Class="pa-4">
                     @if (Exam.IsOpen)
                     {
-                        <MudButton Class="my-3" Variant="Variant.Filled" EndIcon="@Icons.Material.TwoTone.NotStarted" Color="Color.Info">Mở bài thi</MudButton>
-                        <MudButton Class="my-3" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Cancel" Style="background-color:red ; color:#fff;">Đóng bài thi</MudButton>
-                    }
-                    <MudContainer Class="p-0 d-flex align-items-end" MaxWidth="MaxWidth.ExtraExtraLarge">
-
-                        <MudTooltip Class="d-inline" @onclick="HandleShowAddImg" Text="Thay đổi ảnh">
-                            <MudImage Src="@imagePreview" Alt="Mony the dog" Height="100" Class="rounded-lg cursor-pointer border-1" />
-                        </MudTooltip>
-                        @if (IsAddImg)
+                        @if (Exam.Code != "")
                         {
-                            <MudFileUpload Class="d-inline ms-3" T="IBrowserFile" FilesChanged="UploadFiles">
-                                <ButtonTemplate>
-                                    <MudButton HtmlTag="label"
-                                               Variant="Variant.Filled"
-                                               Color="Color.Info"
-                                               StartIcon="@Icons.Material.Filled.CloudUpload"
-                                               for="@context.Id">
-                                        Upload Files
-                                    </MudButton>
-                                </ButtonTemplate>
-                            </MudFileUpload>
+                            <MudButton Class="my-3" Variant="Variant.Filled" @onclick="CloseExam" EndIcon="@Icons.Material.Filled.Cancel" Style="background-color:red ; color:#fff;">Đóng bài thi</MudButton>
                         }
-                    </MudContainer>
-                    <MudForm @ref="Form" @bind-IsValid="IsValid">
-                        <MudTextField T="string" @bind-Value="Exam.Title" Label="Tiêu đề" Required="true" RequiredError="Chưa nhập tiêu đề" />
-                        <MudTextField T="string" @bind-Value="Exam.Descripton" Label="Mô tả" Required="true" RequiredError="Hãy nhập mô tả" />
-                        <MudTextField T="string" @bind-Value="Exam.Type" Label="Thể loại" Required="true" RequiredError="Không bỏ trống thể loại" />
-                        <MudTooltip Text="Chọn chế độ bài thi">
-                            <MudSwitch @bind-Value="@IsOpen" Color="Color.Info" UnCheckedColor="Color.Dark">Kiểm tra</MudSwitch>
-                        </MudTooltip>
+                        else
+                        {
+                            <MudButton Class="my-3" Variant="Variant.Filled" @onclick="CreateCodeExam" EndIcon="@Icons.Material.TwoTone.NotStarted" Color="Color.Info">Mở bài thi</MudButton>
+                        }
+                    }
 
-                        <MudText>Ngày tạo : <span style="color:deepskyblue">@Exam.CreateDate.Day-@Exam.CreateDate.Month-@Exam.CreateDate.Year</span></MudText>
-                        <div class="d-flex align-center justify-content-end">
-                            <MudButton OnClick="HandleSaveChange" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info" Size="Size.Medium">Lưu</MudButton>
-                        </div>
-                    </MudForm>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-
-        <MudGrid>
-            <MudItem Style="margin : auto" xs="12" sm="9">
-                <MudPaper Class="pa-4">
-                    @if (Exam.IsOpen)
+                    @if (Exam.Code != "")
                     {
-                        <MudButton Class="my-2" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Send" Color="Color.Info">Mở bài thi</MudButton>
+                        <MudText Class="mt-2 mb-3">Mã bài thi : <b>@Exam.Code</b></MudText>
                     }
+
                     <MudContainer Class="p-0 d-flex align-items-end" MaxWidth="MaxWidth.ExtraExtraLarge">
 
                         <MudTooltip Class="d-inline" @onclick="HandleShowAddImg" Text="Thay đổi ảnh">
@@ -90,29 +60,41 @@ else
                                                Color="Color.Info"
                                                StartIcon="@Icons.Material.Filled.CloudUpload"
                                                for="@context.Id">
-                                        Upload Files
+                                        Tải ảnh lên
                                     </MudButton>
                                 </ButtonTemplate>
                             </MudFileUpload>
                         }
                     </MudContainer>
                     <MudForm @ref="Form" @bind-IsValid="IsValid">
-                        <MudTextField T="string" @bind-Value="Exam.Title" Label="Tiêu đề" Required="true" RequiredError="Chưa nhập tiêu đề" />
-                        <MudTextField T="string" @bind-Value="Exam.Descripton" Label="Mô tả" Required="true" RequiredError="Hãy nhập mô tả" />
-                        <MudTextField T="string" @bind-Value="Exam.Type" Label="Thể loại" Required="true" RequiredError="Không bỏ trống thể loại" />
-                        <MudTooltip Text="Chọn chế độ bài thi">
+                        <MudTextField Class="mt-2" T="string" @bind-Value="Exam.Title" Label="Tiêu đề" Required="true" RequiredError="Chưa nhập tiêu đề" />
+                        <MudTextField Class="mt-2" T="string" @bind-Value="Exam.Descripton" Label="Mô tả" Required="true" RequiredError="Hãy nhập mô tả" />
+                        <MudTextField Class="mt-2" T="string" @bind-Value="Exam.Type" Label="Thể loại" Required="true" RequiredError="Không bỏ trống thể loại" />
+                        <MudNumericField HideSpinButtons="true" @bind-Value="Exam.Time" Label="Thời gian (phút)" Variant="Variant.Text" Min="1" Max="1000" />
+                        <MudTooltip Text="Chọn chế độ bài thi" Class="my-2">
                             <MudSwitch @bind-Value="@IsOpen" Color="Color.Info" UnCheckedColor="Color.Dark">Kiểm tra</MudSwitch>
                         </MudTooltip>
 
-                        <MudText>Ngày tạo : <span style="color:deepskyblue">@Exam.CreateDate.Day-@Exam.CreateDate.Month-@Exam.CreateDate.Year</span></MudText>
+
+
+
+                        <MudText Class="mt-2">Ngày tạo : <span style="color:deepskyblue">@Exam.CreateDate.Day-@Exam.CreateDate.Month-@Exam.CreateDate.Year</span></MudText>
                         <div class="d-flex align-center justify-content-end">
-                            <MudButton OnClick="HandleSaveChange" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info" Size="Size.Medium">Lưu</MudButton>
+                            @if (Exam.Code == "")
+                            {
+                                <MudButton OnClick="HandleSaveChange" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info" Size="Size.Medium">Lưu</MudButton>
+                            }
                         </div>
                     </MudForm>
                 </MudPaper>
             </MudItem>
         </MudGrid>
 
+        @if (Exam.Code == "")
+        {
+            <ASM_PH35423.Components.ComponentCustom.ListQuestion IdExam="IdExam"></ASM_PH35423.Components.ComponentCustom.ListQuestion>
+
+        }
     </MudContainer>
 
 
@@ -148,6 +130,10 @@ else
             Exam = JsonConvert.DeserializeObject<Exam>(await response.Content.ReadAsStringAsync());
             IsOpen = Exam.IsOpen;
             imagePreview = Exam.Img;
+            if (Exam.Time == 0)
+            {
+                Exam.Time = 1;
+            }
         }
 
     }
@@ -166,9 +152,6 @@ else
                 imagePreview = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
             }
         }
-
-
-
     }
 
     void HandleShowAddImg()
@@ -178,6 +161,7 @@ else
 
     private async Task HandleSaveChange()
     {
+        await Form.Validate();
         if (IsValid)
         {
             Exam.IsOpen = IsOpen;
@@ -187,7 +171,7 @@ else
                 var formFile = await userFile.ToFormFile();
                 var content = new MultipartFormDataContent();
                 Console.WriteLine(formFile.Name);
-                var fileContent = new StreamContent(userFile.OpenReadStream());
+                var fileContent = new StreamContent(userFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
 
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue(formFile.ContentType);
 
@@ -201,8 +185,68 @@ else
                     Exam.Img = urlImg;
                 }
             }
+            Console.WriteLine(Exam.Time.ToString());
             _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
             var response = await _httpClient.PatchAsJsonAsync($"/UpdateExam", Exam);
+            Snackbar.Add("Cập nhật thành công", Severity.Info);
+
+        }
+    }
+
+    async Task CreateCodeExam()
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Xác nhận mở bài thi");
+        parameters.Add(x => x.ButtonText, "Mở bài thi");
+        parameters.Add(x => x.Color, Color.Info);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        var result = await DialogService.Show<Dialog>("Xác nhận", parameters, options).Result;
+        if (result.Data != null)
+        {
+            if ((bool)result.Data)
+            {
+                var code = Guid.NewGuid().ToString();
+                var codeEncoded = ExtensionMethod.EncodeToBase64(code);
+
+                var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+                var response = await _httpClient.PatchAsJsonAsync($"/UpdateCodeExam/{Exam.Id}", codeEncoded);
+
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Exam.Code = codeEncoded;
+                    Snackbar.Add("Bài thi đã được mở", Severity.Success);
+                }
+            }
+        }
+    }
+
+    async Task CloseExam()
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Bạn muốn đóng bài thi?");
+        parameters.Add(x => x.ButtonText, "Đóng bài thi");
+        parameters.Add(x => x.Color, Color.Error);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        var result = await DialogService.Show<Dialog>("Xác nhận", parameters, options).Result;
+        if (result.Data != null)
+        {
+            if ((bool)result.Data)
+            {
+                var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+                var response = await _httpClient.PatchAsJsonAsync($"/UpdateCodeExam/{Exam.Id}", "");
+
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Exam.Code = "";
+                    Snackbar.Add("Đã đóng bài thi", Severity.Error);
+                }
+            }
         }
     }
 }

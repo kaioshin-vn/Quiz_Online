@@ -9,22 +9,19 @@ namespace ASM_PH35423.Data.Tables
         [Key]
         public Guid Id { get; set; }
         public Guid IdUser { get; set; }
-
         public Guid IdExam { get; set; }
-
         public DateTime TimeStart { get; set; }
         public DateTime TimeEnd { get; set; }
-
-        public ModeExam Mode { get; set; }
+        public string Info { get; set; }
 
         public double Scores { get; set; }
 
         [ForeignKey("IdUser")]
-        public ApplicationUser User { get; set; }
+        public ApplicationUser? User { get; set; }
 
         [ForeignKey("IdExam")]
-        public Exam Exam { get; set; }
+        public Exam? Exam { get; set; }
 
-        public ICollection<ExamHistoryDetails> ExamHistoryDetails { get; set; }
+        public ICollection<ExamHistoryDetails>? ExamHistoryDetails { get; set; }
     }
 }

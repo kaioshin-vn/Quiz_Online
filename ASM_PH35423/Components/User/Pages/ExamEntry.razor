@@ -1,0 +1,385 @@
+﻿@page "/ExamEntry/{Id:guid}"
+@using ASM_PH35423.Components.ComponentCustom
+@using ASM_PH35423.Data.DTO
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using Newtonsoft.Json
+@using System.Net.Http.Headers
+@using System.Timers;
+
+@implements IAsyncDisposable
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject IDialogService DialogService
+
+@inject ISnackbar Snackbar
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (ListQuestion == null)
+{
+    <ASM_PH35423.Components.ComponentCustom.Loading></ASM_PH35423.Components.ComponentCustom.Loading>
+}
+else
+{
+    if (Exam.IsOpen && Exam.Code == "")
+    {
+        Error = "Bài thi chưa được mở";
+    }
+    if (Error != null)
+    {
+        <div class="px-5 pt-3" style="height : 100% ; background-image: url('/Img/spiderman-ps4-minimal-fb.jpg');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+            <MudContainer MaxWidth="MaxWidth.Large">
+                <MudAlert Style="width : 1000px; margin:auto;" Class="mt-4" Severity="Severity.Error" Variant="Variant.Filled">@Error</MudAlert>
+            </MudContainer>
+        </div>
+    }
+    else
+    {
+        <MudContainer Style="background-color:#FFEBEE ; height: 100%" Class="pt-5 mb-8" Fixed="true">
+            <div class="d-flex align-center justify-space-between fixed" style="margin-top:12px;width : 80%;">
+                <MudButton Variant="Variant.Filled" Color="Color.Dark" Style="font-size:larger;" OnClick="ExitHanlde">
+                    Quay lại
+                </MudButton>
+                @if (ListQuestion.Count != 0)
+                {
+
+
+                    <MudButton Variant="Variant.Filled" Color="Color.Info" Style="font-size:larger;" OnClick="CommitExam" EndIcon="@Icons.Material.Filled.Send">
+                        Nộp bài
+                    </MudButton>
+                }
+            </div>
+            <MudGrid Style="margin-top:64px;">
+                <MudItem Style="margin : auto" xs="12" sm="9">
+                    <MudPaper Class="pa-4 my-4" Style="background-color : palegreen ; border : solid 2px grey">
+                        <h4>@Exam.Title</h4>
+                        <p style="font-size:larger" class="my-3"><i><b>Số câu hỏi: </b>@ListQuestion.Count câu.</i></p>
+                        <p><i>Thời gian: @Exam.Time phút</i></p>
+                        @if (Exam.IsOpen)
+                        {
+                            <MudText Class="d-flex justify-content-between">
+                                <span>Mã: <b>@Exam.Code</b></span>
+                            </MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid Class="mt-2">
+                <MudItem Style="margin : auto" xs="12" sm="9">
+                    <MudPaper Class="pa-4" Style="background-color : palegreen ; border : solid 2px grey">
+                        @if (ListQuestion.Count == 0)
+                        {
+                            <MudAlert Style="width : 550px;" Severity="Severity.Error" Variant="Variant.Filled">Bài thi này chưa có câu hỏi nào </MudAlert>
+                        }
+                        else
+                        {
+                            <MudForm @ref="Form" Class="my-5">
+                                <MudText Class="my-3" Color="Color.Error"><i>*Hãy đọc kĩ đề trước khi chọn đáp án</i></MudText>
+                                @foreach (var AnswerByCustoms in ListAnswerByCustoms)
+                                {
+                                    <MudPaper Class="my-9 mx-8 pt-5 ps-5 pb-2" Style="background-color: #FFFDE7;" Elevation="3">
+                                        <MudText><b>Câu @(ListAnswerByCustoms.IndexOf(AnswerByCustoms) + 1):</b></MudText>
+                                        @{
+                                            var item = ListQuestion.FirstOrDefault(a => a.Id == AnswerByCustoms.Id);
+                                        }
+                                        <MudText Style="font-size : larger" Class="my-4">@item.Question</MudText>
+                                        @if (item.Img != null)
+                                        {
+                                            <MudImage Src="@item.Img" Alt="Mony the dog" Height="200" Class="rounded-lg cursor-pointer border-1" />
+                                        }
+                                        @if (!item.IsMultiple)
+                                        {
+                                            <MudRadioGroup Class="row" @bind-Value="@AnswerByCustoms.NumbersAnwser">
+                                                @foreach (var answer in item.ListAnswer)
+                                                {
+                                                    <MudRadio Class="col-6 px-3 py-1" Value="answer.Value.ToString()" Color="Color.Info">@answer.Answer</MudRadio>
+                                                }
+                                            </MudRadioGroup>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var answer in item.ListAnswer)
+                                            {
+                                                bool isChose = false;
+                                                if (AnswerByCustoms.NumbersAnwser != null)
+                                                {
+                                                    var ListNumberChose = AnswerByCustoms.NumbersAnwser.Split('_');
+                                                    isChose = ListNumberChose.Any(a => a == answer.Value.ToString());
+                                                }
+                                                <p class="ms-2">
+                                                    <MudCheckBox @onclick="() => CheckBoxClickHanlde(AnswerByCustoms , answer.Value)" Value="isChose" Class="col-6" Color="Color.Info" IndeterminateIcon="@Icons.Material.Filled.CheckBoxOutlineBlank">@answer.Answer</MudCheckBox>
+                                                </p>
+                                            }
+                                        }
+                                    </MudPaper>
+                                }
+                            </MudForm>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+
+        </MudContainer>
+    }
+}
+
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    MudForm Form { get; set; }
+
+    Exam Exam { get; set; }
+
+    Timer _timer { get; set; }
+
+    String Error { get; set; }
+
+    DateTime TimeStart { get; set; }
+
+    List<QuestionTransferCustomer> ListAnswerByCustoms;
+
+    List<QuestionTransferServer> ListQuestion { get; set; }
+
+    class AnswerCustomer
+    {
+        internal int Index { get; set; }
+        internal string Answer { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        TimeStart = DateTime.Now;
+
+
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetStringAsync($"/GetExamDetail/{Id}");
+        Exam = JsonConvert.DeserializeObject<Exam>(response);
+
+
+        response = await _httpClient.GetStringAsync($"/GetExam/{Id}");
+        ListQuestion = JsonConvert.DeserializeObject<List<QuestionTransferServer>>(response);
+
+        if (ListQuestion != null)
+        {
+            ListQuestion.Shuffle();
+            ListAnswerByCustoms = ListQuestion.Select(a =>
+            {
+                var QuestionTransferCustomer = new QuestionTransferCustomer();
+                QuestionTransferCustomer.Id = a.Id;
+                return QuestionTransferCustomer;
+            }).ToList();
+        }
+
+        if (Exam.IsOpen && Exam.Code != "")
+        {
+            SeTimer();
+        }
+
+        if (!Exam.IsOpen)
+        {
+            SeTimer();
+        }
+    }
+
+    void SeTimer()
+    {
+        if (Error == null)
+        {
+            if (ListAnswerByCustoms.Count != 0)
+            {
+                _timer = new Timer(1000 * 20);
+                _timer.Elapsed += async (sender, e) => await HandleSaveExam();
+                _timer.AutoReset = false; // Chỉ chạy một lần
+                _timer.Start();
+            }
+        }
+    }
+
+    void CheckBoxClickHanlde(QuestionTransferCustomer ques, int valueIndex)
+    {
+        var value = valueIndex.ToString();
+        if (ques.NumbersAnwser != null)
+        {
+            var listValueNumbers = ques.NumbersAnwser.Split('_').ToList();
+            if (listValueNumbers.Any(a => a == value))
+            {
+                listValueNumbers.Remove(value);
+            }
+            else
+            {
+                listValueNumbers.Add(value);
+            }
+            ques.NumbersAnwser = String.Join('_', listValueNumbers).Trim('_');
+        }
+        else
+        {
+            ques.NumbersAnwser = value;
+        }
+    }
+
+    async Task ExitHanlde()
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Bạn chưa nộp bài, xác nhận rời đi?");
+        parameters.Add(x => x.ButtonText, "Rời đi");
+        parameters.Add(x => x.Color, Color.Warning);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        var result = await DialogService.Show<Dialog>("Xác nhận", parameters, options).Result;
+        if (result.Data != null)
+        {
+            if ((bool)result.Data)
+            {
+                Navigation.NavigateTo("");
+            }
+        }
+    }
+
+    async Task CommitExam()
+    {
+        foreach (var item in ListAnswerByCustoms)
+        {
+            if (item.NumbersAnwser == null || item.NumbersAnwser == "")
+            {
+                Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+                Snackbar.Add($"Bạn chưa chọn đáp án câu {ListAnswerByCustoms.IndexOf(item) + 1}!", Severity.Error, (config) =>
+            {
+                config.VisibleStateDuration = 2000;
+            });
+                Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+                return;
+            }
+        }
+        // ListQuestion = null;
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Bạn chắc chắn muốn nộp bài?");
+        parameters.Add(x => x.ButtonText, "Nộp bài");
+        parameters.Add(x => x.Color, Color.Success);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        var result = await DialogService.Show<Dialog>("Xác nhận", parameters, options).Result;
+        if (result.Data != null)
+        {
+            if ((bool)result.Data)
+            {
+                await Save();
+            }
+        }
+    }
+
+
+    async Task HandleSaveExam()
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Đã hết thời gian làm bài, bài thi của bạn sẽ được tự động nộp!");
+        parameters.Add(x => x.Color, Color.Primary);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        await InvokeAsync(async () =>
+        {
+            var result = await DialogService.Show<DialogNotice>("Thông báo", parameters, options).Result;
+        });
+
+        await Save();
+
+
+    }
+
+    async Task Save ()
+    {
+
+        var checkClose = await HandleCheckExamClosed();
+        if (checkClose)
+        {
+            Error = "Bài thi này đã bị đóng";
+            return;
+        }
+
+        foreach (var item in ListAnswerByCustoms)
+        {
+            if (item.NumbersAnwser == null || item.NumbersAnwser == "")
+            {
+                item.NumbersAnwser = "100";
+            }
+        }
+
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.PostAsJsonAsync($"/MarkExam", ListAnswerByCustoms);
+        var pointExam = Double.Parse(await response.Content.ReadAsStringAsync());
+        if (pointExam == -1)
+        {
+            Error = "Hiện bài thi này không có câu hỏi nào, có thể do chủ sở hữu đã xóa câu hỏi";
+            return;
+        }
+        else
+        {
+            var data = await _httpClient.GetStringAsync($"/GetToTalQuestion/{Exam.Id}");
+            var totalQuestion = Convert.ToDouble(data);
+
+            var examHistory = new ExamHistory();
+            examHistory.TimeStart = TimeStart;
+            examHistory.Scores = pointExam;
+            examHistory.TimeEnd = DateTime.Now;
+
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userCurrent = await UserManager.GetUserAsync(user);
+            var idUser = userCurrent.Id;
+
+            examHistory.IdUser = idUser;
+            examHistory.IdExam = Exam.Id;
+
+            var totalTrueQuestion = Math.Floor(pointExam/ (10 / totalQuestion));
+            var info = $"{totalTrueQuestion}/{totalQuestion}";
+            if (Exam.Code != "")
+            {
+                info = info + "_" + Exam.Code;
+            }
+            examHistory.Info = info;
+
+            response = await _httpClient.PostAsJsonAsync($"/CreateHistory", examHistory);
+            if (response.IsSuccessStatusCode)
+            {
+                var strId = await response.Content.ReadAsStringAsync();
+                var id = Guid.Parse(strId.Trim('"'));
+
+                response = await _httpClient.PostAsJsonAsync($"/CreateDetailHistory/{id}", ListAnswerByCustoms);
+                if (response.IsSuccessStatusCode)
+                {
+                    _timer.Stop();
+                    _timer.Dispose();
+                    Navigation.NavigateTo($"/ExamHistory/{id}");
+                }
+            }
+
+        }
+    }
+
+    async Task<bool> HandleCheckExamClosed()
+    {
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetStringAsync($"/GetExamDetail/{Id}");
+        var ExamCheck = JsonConvert.DeserializeObject<Exam>(response);
+        return (ExamCheck.Code == "" && ExamCheck.IsOpen);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+    }
+}

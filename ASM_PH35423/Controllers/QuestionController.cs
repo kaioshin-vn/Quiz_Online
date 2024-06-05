@@ -17,19 +17,47 @@ namespace ASM_PH35423.Controllers
         }
 
         // GET: Exams
-        [HttpGet("/GetExams/{idUser}")]
-        public async Task<List<Exam>> Index(Guid idUser)
+        [HttpGet("/GetQuestions/{idExam}")]
+        public async Task<List<Question>> Index(Guid idExam)
         {
-            var exams = _context.Exams.Where(a => a.IdUser == idUser && a.IsDeleted == false).ToList();
-            return exams;
+            var questions = new List<Question>();
+            if (await _context.Questions.CountAsync() > 0)
+            {
+                questions = _context.Questions.Where(a => a.IdExam == idExam).ToList();
+            }
+            return questions;
         }
 
-        [HttpGet("/GetExamDetail/{idDetail}")]
-        public async Task<Exam?> GetExams(Guid idDetail)
+        [HttpPost("/CreateQuestions")]
+        public async Task Create([FromBody] Question question)
         {
-            var exam = await _context.Exams.FirstOrDefaultAsync(a => a.Id == idDetail);
-
-            return exam;
+            _context.Questions.Add(question);
+            await _context.SaveChangesAsync();
         }
+
+        [HttpGet("/GetDetailQuestion/{idDetail}")]
+        public async Task<Question?> GetExams(Guid idDetail)
+        {
+            var question = await _context.Questions.FirstOrDefaultAsync(a => a.IdQuestion == idDetail);
+
+            return question;
+        }
+
+        [HttpPatch("/UpdateQuestion")]
+        public async Task Update([FromBody] Question question)
+        {
+            _context.Questions.Update(question);
+            await _context.SaveChangesAsync();
+        }
+
+
+        [HttpDelete("/DeleteQuestion/{idDetail}")]
+        public async Task<bool> Delete(Guid idDetail)
+        {
+            var question =await _context.Questions.FindAsync(idDetail);
+            _context.Questions.Remove(question);
+
+            return _context.SaveChanges()>0;
+        } 
     }
 }

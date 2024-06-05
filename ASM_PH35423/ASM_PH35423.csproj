@@ -23,8 +23,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\User\Pages\" />
     <Folder Include="wwwroot\Img\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Components\Teacher\Pages\ListResultExam.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
   </ItemGroup>
 
 </Project>

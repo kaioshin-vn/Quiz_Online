@@ -1,0 +1,206 @@
+﻿@page "/ExamHistory/{idHistory:guid}"
+
+@using ASM_PH35423.Components.ComponentCustom
+@using ASM_PH35423.Data.DTO
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using Newtonsoft.Json
+@using System.Net.Http.Headers
+@using System.Timers;
+
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject IDialogService DialogService
+
+@inject ISnackbar Snackbar
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (ExamHistory == null)
+{
+    <ASM_PH35423.Components.ComponentCustom.Loading></ASM_PH35423.Components.ComponentCustom.Loading>
+}
+else
+{
+    if (Error != null)
+    {
+        <div class="px-5 pt-3" style="height : 100% ; background-image: url('/Img/spiderman-ps4-minimal-fb.jpg');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+            <MudContainer MaxWidth="MaxWidth.Large">
+                <MudAlert Style="width : 1000px; margin:auto;" Class="mt-4" Severity="Severity.Error" Variant="Variant.Filled">@Error</MudAlert>
+            </MudContainer>
+        </div>
+    }
+    else
+    {
+        <MudContainer Style="background-color:#FFEBEE ; height: 100%" Class="pt-5 mb-8" Fixed="true">
+            <div class="d-flex align-center justify-space-between fixed" style="margin-top:12px;width : 80%;">
+                <MudButton Variant="Variant.Filled" Color="Color.Dark" Style="font-size:larger;" OnClick="ExitHanlde">
+                    Quay lại
+                </MudButton>
+            </div>
+            <MudGrid Style="margin-top:64px;">
+                <MudItem Style="margin : auto" xs="12" sm="9">
+                    <MudPaper Class="pa-4 my-4" Style="background-color : palegreen ; border : solid 2px grey ;font-size:18px ">
+                        <h4></h4>
+                        <p class="my-3" style="font-size:24px"> Tổng điểm :  @ExamHistory.Scores .</p>
+                        @if (@TimeDoExam != 0)
+                        {
+                            <p class="my-2"><i>Thời gian làm: @TimeDoExam phút .</i></p>
+                        }
+                        else
+                        {
+                            var time = Convert.ToInt16((ExamHistory.TimeEnd - ExamHistory.TimeStart).TotalSeconds);
+                            <p class="my-2"><i>Thời gian làm: @time giây .</i></p>
+                        }
+                        @if (Info != null)
+                        {
+                            <p class="my-2"><i>Chính xác: @Info[0] .</i></p>
+                        }
+
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid Class="mt-2">
+                <MudItem Style="margin : auto" xs="12" sm="9">
+                    <MudPaper Class="pa-4 my-5" Style="background-color : palegreen ; border : solid 2px grey">
+                        <MudText Class="my-3" Color="Color.Error"><i>*Đây là bản ghi lại đề bài thời điểm thi</i></MudText>
+                        @foreach (var QuestionHistory in ListHistory)
+                        {
+                            <MudPaper Class="my-9 mx-8 pt-5 ps-5 pb-2" Style="background-color: #FFFDE7;" Elevation="3">
+                                <MudText><b>Câu @(ListHistory.IndexOf(QuestionHistory) + 1):</b></MudText>
+
+                                <MudText Style="font-size : larger" Class="my-4">@QuestionHistory.Question</MudText>
+                                @if (QuestionHistory.Img != null)
+                                {
+                                    <MudImage Src="@QuestionHistory.Img" Alt="Mony the dog" Height="200" Class="rounded-lg cursor-pointer border-1" />
+                                }
+                                @if (!QuestionHistory.IsMultiple)
+                                {
+                                    <MudRadioGroup ReadOnly="true" T="bool">
+                                        @foreach (var item in QuestionHistory.ListAnswer)
+                                        {
+                                            var isRight = false;
+                                            if (item.Value.ToString() == QuestionHistory.Resolve)
+                                            {
+                                                isRight = true;
+                                            }
+                                            <div class="d-flex">
+                                                <MudRadio Class="col-6 px-3 py-1" Value="!isRight" Color="Color.Info">@item.Answer</MudRadio>
+                                                <div class="mx-2">
+                                                    <MudTooltip Text="Câu trả lời của bạn">
+                                                        @if (isRight && item.Value.ToString() == QuestionHistory.AnwserCustom)
+                                                        {
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" aria-label="github"></MudIconButton>
+                                                        }
+                                                        else if (isRight && item.Value.ToString() != QuestionHistory.AnwserCustom && QuestionHistory.AnwserCustom != "100")
+                                                        {
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Clear" Color="Color.Error" aria-label="github"></MudIconButton>
+                                                        }
+                                                    </MudTooltip>
+                                                </div>
+                                            </div>
+                                        }
+                                    </MudRadioGroup>
+                                }
+                                else
+                                {
+
+                                    @foreach (var answer in QuestionHistory.ListAnswer)
+                                    {
+                                        bool isRight = false;
+                                        var listNumberChose = QuestionHistory.AnwserCustom.Split('_');
+                                        var listNumberRight = QuestionHistory.Resolve.Split('_');
+
+                                        if (listNumberRight.Any(a => a == answer.Value.ToString()))
+                                        {
+                                            isRight = true;
+                                        }
+
+
+                                        <p class="ms-2 d-flex">
+                                            <MudCheckBox ReadOnly="true" Value="isRight" Class="col-6" Color="Color.Info" IndeterminateIcon="@Icons.Material.Filled.CheckBoxOutlineBlank">@answer.Answer</MudCheckBox>
+                                            <div class="mx-2">
+                                                <MudTooltip Text="Câu trả lời của bạn">
+                                                    @if (isRight && listNumberChose.Any(a => a == answer.Value.ToString()))
+                                                    {
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" aria-label="github"></MudIconButton>
+                                                    }
+                                                    else if (!isRight && listNumberChose.Any(a => a == answer.Value.ToString()))
+                                                    {
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Clear" Color="Color.Error" aria-label="github"></MudIconButton>
+                                                    }
+                                                </MudTooltip>
+                                            </div>
+                                        </p>
+                                    }
+                                }
+
+                                @if (QuestionHistory.AnwserCustom == "100")
+                                {
+                                    <MudText Class="my-3" Color="Color.Error"><i>Câu hỏi này chưa được chọn đáp án</i></MudText>
+
+                                }
+                            </MudPaper>
+                        }
+                    </MudPaper>
+
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    }
+}
+
+
+@code {
+    [Parameter]
+    public Guid idHistory { get; set; }
+
+    ExamHistory ExamHistory { get; set; }
+
+    int TimeDoExam { get; set; }
+
+    string[] Info { get; set; }
+
+    String Error { get; set; }
+
+    List<HistoryTransfer> ListHistory { get; set; }
+
+    List<QuestionTransferServer> ListQuestion { get; set; }
+
+    class AnswerCustomer
+    {
+        internal int Index { get; set; }
+        internal string Answer { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetStringAsync($"/GetListExamHistory/{idHistory}");
+        ListHistory = JsonConvert.DeserializeObject<List<HistoryTransfer>>(response);
+
+        response = await _httpClient.GetStringAsync($"/GetExamHistory/{idHistory}");
+        ExamHistory = JsonConvert.DeserializeObject<ExamHistory>(response);
+
+        TimeDoExam = Convert.ToInt16((ExamHistory.TimeEnd - ExamHistory.TimeEnd).TotalMinutes);
+
+        Info = ExamHistory.Info.Split('_');
+
+
+    }
+
+    async Task ExitHanlde()
+    {
+        Navigation.NavigateTo("/History");
+    }
+
+}

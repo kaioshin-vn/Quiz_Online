@@ -1,0 +1,230 @@
+﻿@page "/ResultExam/{idExam:guid}"
+
+@using ASM_PH35423.Components.ComponentCustom
+@using ASM_PH35423.Data
+@using ASM_PH35423.Data.DTO
+@using ASM_PH35423.Data.Tables
+@using Microsoft.AspNetCore.Identity
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using Newtonsoft.Json
+
+
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
+
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+
+@if (ListHistoryResultHasCode == null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <MudTabs Outlined="true" Color="@Color.Secondary" Border="true">
+        <MudTabPanel OnClick="NoCodeHandle" Text="Luyện tập" Icon="@Icons.Material.Filled.BorderColor" />
+        <MudTabPanel OnClick="HasCodeHandle" Text="Kiểm tra" Icon="@Icons.Material.Filled.Assignment" />
+    </MudTabs>
+
+    <MudContainer MaxWidth="MaxWidth.Large">
+
+        @if (isNoCode)
+        {
+            @if (ListHistoryResultNoCode.Count == 0)
+            {
+                <div class="px-5 pt-3" style="height : 100% ; background-image: url('/Img/spiderman-ps4-minimal-fb.jpg');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+                    <MudAlert Style="width : 550px;" Class="mt-5" Severity="Severity.Info" Variant="Variant.Filled">Chưa có ai vào luyện tập!</MudAlert>
+                </div>
+            }
+            else
+            {
+                <MudSimpleTable Class="my-5" Style="overflow-x: auto;">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Điểm số</th>
+                            <th>Thời gian làm</th>
+                            <th>Ngày</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in ListHistoryResultNoCode)
+                        {
+                            <tr>
+                                <td>@row.NameUser</td>
+                                <td>@row.Point</td>
+
+                                @{
+                                    var timeDo = row.TimeDoExam;
+                                    if (timeDo < 1)
+                                    {
+                                        timeDo *= 60;
+                                        <td>@Convert.ToInt16(timeDo)giây</td>
+                                    }
+                                    else
+                                    {
+                                        <td>@Convert.ToInt16(timeDo) phút</td>
+                                    }
+                                }
+
+
+                                <td>@row.Date.Hour:@row.Date.Minute @row.Date.ToString("tt") / @row.Date.Day-@row.Date.Month-@row.Date.Year</td>
+                                <td><a href="/ExamHistory/@row.Id"><MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.WorkspacePremium" Color="Color.Primary">Chi tiết</MudButton></a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        }
+        else
+        {
+            @if (ListHistoryResultHasCode.Count == 0)
+            {
+                <div class="px-5 pt-3" style="height : 100% ; background-image: url('/Img/spiderman-ps4-minimal-fb.jpg');
+            background-size: cover; /* Bao phủ toàn bộ phần tử */
+            background-repeat: no-repeat; /* Không lặp lại hình ảnh */
+            background-position: center; /* Canh giữa hình ảnh */
+            height: 100vh; /* Chiều cao 100% của viewport */
+            width: 100%; /* Chiều rộng 100% */">
+                    <MudAlert Style="width : 550px;" Class="mt-5" Severity="Severity.Info" Variant="Variant.Filled">Chưa có ai tham gia bài kiểm tra!</MudAlert>
+                </div>
+            }
+            else
+            {
+                <div class="mt-5 pt-5">
+                    @foreach (var listHistory in ListHistoryResultHasCode)
+                    {
+                    <MudPaper Elevation="3" Class="my-4 p-4">
+                        <MudText>Mã: <b>@listHistory.Code</b></MudText>
+                        @if (listHistory.ListExamHis.Count == 0)
+                        {
+                            <MudAlert Style="width : 550px;" Severity="Severity.Info" Variant="Variant.Filled">Mã này chưa có ai vào thi!</MudAlert>
+                        }
+                        else
+                        {
+                            <MudSimpleTable Elevation="3" Class="my-5" Style="overflow-x: auto;">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Điểm số</th>
+                                        <th>Thời gian làm</th>
+                                        <th>Ngày</th>
+                                        <th>Tùy chọn</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in listHistory.ListExamHis)
+                                    {
+                                        <tr>
+                                            <td>@row.User.UserName</td>
+                                            <td>@row.Scores</td>
+
+                                            @{
+                                                var timeDo = (row.TimeEnd - row.TimeStart).TotalMinutes;
+                                                if (timeDo < 1)
+                                                {
+                                                    timeDo *= 60;
+                                                    <td>@Convert.ToInt16(timeDo) giây</td>
+                                                }
+                                                else
+                                                {
+                                                    <td>@Convert.ToInt16(timeDo) phút</td>
+                                                }
+                                            }
+
+
+                                            <td>@row.TimeStart.Hour:@row.TimeStart.Minute @row.TimeStart.ToString("tt") / @row.TimeStart.Day-@row.TimeStart.Month-@row.TimeStart.Year</td>
+                                                <td>
+                                                    <a href="/ExamHistory/@row.Id"><MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.WorkspacePremium" Color="Color.Primary">Chi tiết</MudButton></a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        }
+                    </MudPaper>
+                    }
+                </div>
+            }
+        }
+    </MudContainer>
+}
+
+@code {
+    List<ExamResultDetail> ListHistoryResultNoCode;
+
+    List<ExamResultHasCode> ListHistoryResultHasCode;
+
+    [Parameter]
+    public Guid idExam { get; set; }
+
+
+    bool isNoCode { get; set; } = true;
+    protected override async Task OnInitializedAsync()
+    {
+        var _http = HttpClientFactory.CreateClient("MyHttpClient");
+        var data = await _http.GetStringAsync($"/GetExamResultNoCode/{idExam}");
+
+        ListHistoryResultNoCode = JsonConvert.DeserializeObject<List<ExamResultDetail>>(data);
+
+        data = await _http.GetStringAsync($"/GetExamResultHasCode/{idExam}");
+
+        Console.WriteLine("\nCheck\n");
+        ListHistoryResultHasCode = JsonConvert.DeserializeObject<List<ExamResultHasCode>>(data);
+    }
+
+    private async Task DeleteExamHandle(Guid id)
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Bạn chắc chắn xóa bài kiểm tra này ?");
+        parameters.Add(x => x.ButtonText, "Xóa");
+        parameters.Add(x => x.Color, Color.Error);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+    }
+
+    async Task HasCodeHandle()
+    {
+        isNoCode = false;
+    }
+
+    async Task NoCodeHandle()
+    {
+        isNoCode = true;
+    }
+    private async Task LoadNoCode()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var userCurrent = await UserManager.GetUserAsync(user);
+        var idUser = userCurrent.Id;
+
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetAsync($"/GetExams/{idUser}");
+
+    }
+
+    private async Task LoadHasCode()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var userCurrent = await UserManager.GetUserAsync(user);
+        var idUser = userCurrent.Id;
+
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetAsync($"/GetExams/{idUser}");
+    }
+
+}

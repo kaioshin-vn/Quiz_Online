@@ -4,6 +4,7 @@ using ASM_PH35423.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ASM_PH35423.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240522195557_create_db")]
+    partial class create_db
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,9 +151,8 @@ namespace ASM_PH35423.Migrations
                     b.Property<Guid>("IdUser")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Info")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Mode")
+                        .HasColumnType("int");
 
                     b.Property<double>("Scores")
                         .HasColumnType("float");
@@ -177,40 +179,33 @@ namespace ASM_PH35423.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Answer1")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Answer2")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Answer3")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Answer4")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Answer5")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("IdEH")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Img")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("NumberRight")
+                        .HasColumnType("int");
 
-                    b.Property<string>("NumbersChose")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NumbersRight")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("isMultiple")
-                        .HasColumnType("bit");
+                    b.Property<int>("NumberTrue")
+                        .HasColumnType("int");
 
                     b.HasKey("IdExamHistoryDetail");
 
