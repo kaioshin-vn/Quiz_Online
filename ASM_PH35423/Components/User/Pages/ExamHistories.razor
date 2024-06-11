@@ -1,12 +1,15 @@
-﻿@page "/ExamHistory/{idHistory:guid}"
+﻿@page "/ExamHistory/{idHistory:guid}/{v:bool?}"
 
 @using ASM_PH35423.Components.ComponentCustom
 @using ASM_PH35423.Data.DTO
 @using System.Text.RegularExpressions
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
 @using Newtonsoft.Json
 @using System.Net.Http.Headers
 @using System.Timers;
+
+@attribute [Authorize(Roles = "Student,Teacher,Admin")]
 
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
@@ -161,6 +164,8 @@ else
 @code {
     [Parameter]
     public Guid idHistory { get; set; }
+    [Parameter]
+    public bool v { get; set; } 
 
     ExamHistory ExamHistory { get; set; }
 
@@ -193,14 +198,23 @@ else
 
         TimeDoExam = Convert.ToInt16((ExamHistory.TimeEnd - ExamHistory.TimeEnd).TotalMinutes);
 
+        
         Info = ExamHistory.Info.Split('_');
 
+        Console.WriteLine(v.ToString());
 
     }
 
     async Task ExitHanlde()
     {
-        Navigation.NavigateTo("/History");
+        if (!v)
+        {
+            Navigation.NavigateTo("/History");
+        }
+        else
+        {
+            Navigation.NavigateTo($"/ResultExam/{ExamHistory.IdExam}");
+        }
     }
 
 }

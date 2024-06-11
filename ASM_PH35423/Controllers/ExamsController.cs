@@ -107,7 +107,21 @@ namespace ASM_PH35423.Controllers
             return id;
         }
 
+        [HttpGet("/GetToExamByCode/{code}")]
+        public async Task<string?> GetExamByCode( string code)
+        {
+            var exam = await _context.Exams.FirstOrDefaultAsync(a => a.Code == code && a.IsDeleted == false);
+            if (exam != null)
+            {
+                return exam.Id.ToString();
+            }
+            else
+            {
+                return "";
+            }
+        }
+
         // GET: Exams/Edit/5
-     
+
     }
 }

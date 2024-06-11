@@ -1,10 +1,12 @@
 ﻿@using ASM_PH35423.Components.ComponentCustom
+@using Microsoft.AspNetCore.Authorization
 @implements IDisposable
 
 @inject IDialogService DialogService
 @inject NavigationManager NavigationManager
 @inject SignInManager<ApplicationUser> _signInManager
 @inject IHttpClientFactory HttpClientFactory
+
 
 <div class=" navbar navbar-dark">
     <div class="container-fluid">
@@ -18,28 +20,45 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        <AuthorizeView>
+        <AuthorizeView> 
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/StoreExam">
-                        <MudIconButton Icon="@Icons.Material.Filled.LocalLibrary" Color="Color.Tertiary" Size="Size.Small" />Thư viện của bạn
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/ListExamUser">
-                        <MudIconButton Icon="@Icons.Material.Filled.FormatListBulleted" Color="Color.Tertiary" Size="Size.Small" />Danh sách bài thi
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/History">
-                        <MudIconButton Icon="@Icons.Material.Filled.History" Color="Color.Tertiary" Size="Size.Small" />Lịch sử thi
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/ListResultExam">
-                        <MudIconButton Icon="@Icons.Material.Filled.SportsScore" Color="Color.Tertiary" Size="Size.Small" />Kết quả bài thi
-                    </NavLink>
-                </div>
+                <AuthorizeView Roles="Student" Context="ForStudent">
+                    
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/History">
+                            <MudIconButton Icon="@Icons.Material.Filled.History" Color="Color.Tertiary" Size="Size.Small" />Lịch sử thi
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/ListExamUser">
+                            <MudIconButton Icon="@Icons.Material.Filled.FormatListBulleted" Color="Color.Tertiary" Size="Size.Small" />Danh sách bài thi
+                        </NavLink>
+                    </div>
+                </AuthorizeView>
+                <AuthorizeView Roles="Teacher,Admin" Context="ForTeacher">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/StoreExam">
+                            <MudIconButton Icon="@Icons.Material.Filled.LocalLibrary" Color="Color.Tertiary" Size="Size.Small" />Thư viện của bạn
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/ListResultExam">
+                            <MudIconButton Icon="@Icons.Material.Filled.SportsScore" Color="Color.Tertiary" Size="Size.Small" />Kết quả bài thi
+                        </NavLink>
+                    </div>
+                </AuthorizeView>
+                <AuthorizeView Roles="Admin" Context="ForAdmin">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/ManageAccount">
+                            <MudIconButton Icon="@Icons.Material.Filled.ManageAccounts" Color="Color.Tertiary" Size="Size.Small" />Quản lý tài khoản
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/ManageAuthor">
+                            <MudIconButton Icon="@Icons.Material.Filled.SettingsAccessibility" Color="Color.Tertiary" Size="Size.Small" />Quản lý quyền
+                        </NavLink>
+                    </div>
+                </AuthorizeView>
                 <div class="nav-item px-3">
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
@@ -52,7 +71,7 @@
             </Authorized>
             <NotAuthorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link">
+                    <NavLink class="nav-link" href="Account/Register">
                         <MudIconButton Icon="@Icons.Material.Filled.AppRegistration" Color="Color.Tertiary" Size="Size.Small" /> Đăng ký
                     </NavLink>
                 </div>
@@ -69,7 +88,6 @@
 @code {
     private string? currentUrl;
 
-    ElementReference Form;
 
     protected override void OnInitialized()
     {

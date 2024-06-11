@@ -3,10 +3,13 @@
 @using ASM_PH35423.Data
 @using ASM_PH35423.Data.DTO
 @using ASM_PH35423.Data.Tables
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using System.Text.RegularExpressions
 @using System.ComponentModel.DataAnnotations
 @using Newtonsoft.Json
+
+@attribute [Authorize(Roles = "Teacher,Admin")]
 
 
 @inject NavigationManager Navigation
@@ -38,10 +41,22 @@ else
         {
             foreach (var item in ListExams)
             {
-                <p>
-                    <a class="my-4" href="/Exam/@item.Id">@item.Id</a>
-                    <MudButton @onclick="() => DeleteExamHandle(item.Id)" Variant="Variant.Filled" Color="Color.Error">Xóa</MudButton>
-                </p>
+                <MudPaper Elevation="3" Class="d-flex justify-content-between align-items-end my-6 p-4">
+                    <MudImage Src="@item.Img" Alt="Mony the dog" Class="" Height="180" />
+                    <div>
+                        <h3>@item.Title</h3>
+                        <p>Mô tả : <b>@item.Descripton</b></p>
+                        <p>Thể loại : <b>@item.Type</b></p>
+                        <MudText Class="mt-2">Ngày tạo : <span style="color:green">@item.CreateDate.Day-@item.CreateDate.Month-@item.CreateDate.Year</span></MudText>
+
+                    </div>
+                    <div>
+                        <MudButton Class="d-block my-3 " @onclick =" () => Navigate(item.Id)" Variant="Variant.Filled"  Color="Color.Secondary">
+                            Chỉnh sửa
+                        </MudButton>
+                        <MudButton Class="d-block" @onclick="() => DeleteExamHandle(item.Id)" Variant="Variant.Filled" Color="Color.Error">Xóa</MudButton>
+                    </div>
+                </MudPaper>
             }
         }
     </MudContainer>
@@ -54,6 +69,11 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadExam();
+    }
+
+    void Navigate (Guid id )
+    {
+        Navigation.NavigateTo("/Exam/" + id);
     }
 
     private async Task AddExamHandle()
@@ -101,10 +121,10 @@ else
                 await LoadExam();
             }
         }
-        
+
     }
 
-    private async Task LoadExam ()
+    private async Task LoadExam()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;

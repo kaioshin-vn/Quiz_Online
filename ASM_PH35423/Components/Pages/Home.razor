@@ -1,7 +1,110 @@
 ﻿@page "/"
+@using ASM_PH35423.Components.ComponentCustom
 
-<PageTitle>Home</PageTitle>
+@inject IHttpClientFactory HttpClientFactory
 
-<h1>Hello, world!</h1>
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
 
-Welcome to your new app.
+<PageTitle>EasyQuiz</PageTitle>
+
+<MudCarousel Class="mud-width-full" Style="height:450px;border-top:2px solid grey ;border-bottom:2px solid grey" ShowArrows="true" ShowBullets="true" EnableSwipeGesture="true" AutoCycle="true" TData="object">
+    <MudCarouselItem Transition="Transition.Slide" Color="@Color.Primary">
+        <div class="d-flex" style="height:100%">
+            <MudImage Src="/Img/avenger.jpg" Alt="Mony the dog" Class="" Width="1280" Fluid />
+        </div>
+    </MudCarouselItem>
+    <MudCarouselItem Transition="Transition.Custom" Color="@Color.Secondary">
+        <div class="d-flex" style="height:100%">
+            <MudImage Src="/Img/Sôngku.jpg" Alt="Mony the dog" Width="1280" />
+        </div>
+    </MudCarouselItem>
+    <MudCarouselItem Transition="Transition.Slide">
+        <div class="d-flex" style="height:100%">
+            <MudImage Src="/Img/dc.jpg" Alt="Mony the dog" Class="" Width="1280" Fluid />
+        </div>
+    </MudCarouselItem>
+    <MudCarouselItem Transition="Transition.Slide">
+        <div class="d-flex" style="height:100%">
+            <MudImage Src="/Img/univer.png" Alt="Mony the dog" Class="" Width="1280" Fluid />
+        </div>
+    </MudCarouselItem>
+    <MudCarouselItem Transition="Transition.Slide">
+        <div class="d-flex" style="height:100%">
+            <MudImage Src="/Img/avatar.jpg" Alt="Mony the dog" Class="" Width="1280" Fluid />
+        </div>
+    </MudCarouselItem>
+</MudCarousel>
+
+<h1 class="my-5" style="text-align : center;color:aquamarine">Chào mừng đến với trang web thi online số 1 Việt Nam</h1>
+
+@if (ListExams != null)
+{
+    @foreach (var item in ListExams)
+    {
+
+        var _httpClien = HttpClientFactory.CreateClient("MyHttpClient");
+        var respons = _httpClien.GetStringAsync($"/GetToTalQuestion/" + item.Id).Result;
+        var totalQues = Convert.ToInt16(respons);
+        if (totalQues != 0)
+        {
+            <MudPaper Elevation="3" Class="d-flex justify-content-between align-items-end my-10 mx-5 p-4">
+                <MudImage Src="@item.Img" Alt="Mony the dog" Class="" Height="180" />
+                <div>
+                    <h3>@item.Title</h3>
+                    <p>Mô tả : <b>@item.Descripton</b></p>
+
+                    <p>Số lượng : <b>@respons câu</b></p>
+                    <MudText Class="mt-2">Thời gian : <span style="color:green">@item.Time phút</span></MudText>
+
+                </div>
+                <div>
+                    <MudButton Class=" my-3" @onclick=" () => TryExam(item.Id)" EndIcon="@Icons.Material.Filled.DocumentScanner" Variant="Variant.Filled" Color="Color.Info">
+                        Vào thi
+                    </MudButton>
+                </div>
+            </MudPaper>
+        }
+    }
+}
+
+@code {
+    List<Exam> ListExams;
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExam();
+    }
+
+    async Task TryExam(Guid id)
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Bạn chắc chắn muốn vào thi ?");
+        parameters.Add(x => x.ButtonText, "Vào thi");
+        parameters.Add(x => x.Color, Color.Tertiary);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+
+
+        var result = await DialogService.Show<Dialog>("Xác nhận thi", parameters, options).Result;
+        if (result.Data != null)
+        {
+            if ((bool)result.Data)
+            {
+                Navigation.NavigateTo("/ExamEntry/" + id);
+            }
+        }
+    }
+
+    private async Task LoadExam()
+    {
+
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var response = await _httpClient.GetAsync($"/GetAllExams");
+
+        if (response.IsSuccessStatusCode)
+        {
+            ListExams = JsonConvert.DeserializeObject<List<Exam>>(await response.Content.ReadAsStringAsync());
+        }
+    }
+}

@@ -3,7 +3,7 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-
+@inject NavigationManager Navigation
 <style>
     a:hover {
         opacity : 0.8 ;
@@ -18,8 +18,9 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row px-4 d-flex justify-content-center" >
+                <input type="text" @bind-value="Code" class="form-control" style="width : 550px" id="search" placeholder="Nhập mã " aria-label="Recipient's username" aria-describedby="basic-addon2">
+                <button @onclick="Search" class="input-group-text fw-lagre mx-3" style="background-color: rgb(42, 198, 255);border:solid 2px grey" id=""> Tìm kiếm</button>
         </div>
 
         <article class="pb-5" style="padding : 0px !important ; height : calc(100% - 4em);">
@@ -27,11 +28,57 @@
         </article>
     </main>
 </div>
-<footer style="height:40px; background-color :aquamarine;">
+<footer class="footer border" style="background-color : lightgreen;">
+    <div class="container-fluid w-100 " style="border-top: 2px solid black;">
+        <div class="row">
+            <div class="col-md-4 ">
+                <h3 class="mt-3">EASY QUIZ</h3>
+            </div>
+            <div class="col-md-3 mt-3 d-flex align-items-center ">
+                <ul class="list-unstyled " style="font-size: 16px;">
+                    <li><a href="#">Giới thiệu</a></li>
+                    <li><a href="#">Sản phẩm</a></li>
+                    <li><a href="#">Liên hệ : <u>0978040960</u></a></li>
+                </ul>
+            </div>
+            <div class="col-md-1 mt-3 d-flex align-items-center fs-5">
+                <ul class="list-unstyled social-links" style="font-size: 16px;">
+                    <li><a href="#"><i class="fab fa-facebook"></i></a></li>
+                    <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                    <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                </ul>
+            </div>
+            <div class="col-md-3 fs-5  mt-3">
+                Địa chỉ : <u>Số 8 ,Ngõ 50 Trần Bình , Phường Mai Dịch , Quận Cầu Giấy , Thành Phố Hà Nội</u>
+            </div>
+        </div>
 
+        <div class="mx-auto mt-3 pb-4 copyright fs-5 w-100">
+            &copy; Bản quyền thuộc về <a href="https://www.facebook.com/profile.php?id=100049975813334">Đặng Đình Giáp</a>
+        </div>
+    </div>
 </footer>
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    string Code;
+
+    async Task Search()
+    {
+        var _http = new HttpClient();
+        var data = await _http.GetStringAsync($"https://localhost:7170/GetToExamByCode/{Code}");
+        if (!String.IsNullOrEmpty(data))
+        {
+            Navigation.NavigateTo("/ExamEntry/" + data);
+        }
+        else
+        {
+            Navigation.NavigateTo("/NotFound");
+        }
+        Code = "";
+    }
+}

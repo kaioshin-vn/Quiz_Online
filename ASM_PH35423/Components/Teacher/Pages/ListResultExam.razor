@@ -3,10 +3,13 @@
 @using ASM_PH35423.Data
 @using ASM_PH35423.Data.DTO
 @using ASM_PH35423.Data.Tables
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using System.Text.RegularExpressions
 @using System.ComponentModel.DataAnnotations
 @using Newtonsoft.Json
+
+@attribute [Authorize(Roles = "Teacher,Admin")]
 
 
 @inject NavigationManager Navigation
@@ -38,9 +41,23 @@ else
         {
             foreach (var item in ListHistory)
             {
-                <p>
-                    <a class="my-4" href="/ResultExam/@item.Id">@item.Id</a>
-                </p>
+                <MudPaper Elevation="3" Class="d-flex justify-content-between align-items-center my-6 p-4">
+                    <MudImage Src="@item.Img" Alt="Mony the dog" Class="" Height="120" />
+                    <div>
+                        <h3>
+                            @item.Title
+                        </h3>
+                        <p>Số người tham gia  : <i>@item.PeopleCount</i></p>
+                    </div>
+                    <div>
+                        @if (item.PeopleCount != 0)
+                        {
+                            <MudButton Class=" my-3" @onclick=" () => See(item.Id)" EndIcon="@Icons.Material.Filled.Details" Variant="Variant.Filled" Color="Color.Tertiary">
+                                Chi tiết
+                            </MudButton>
+                        }
+                    </div>
+                </MudPaper>
             }
         }
     </MudContainer>
@@ -65,10 +82,14 @@ else
 
         ListHistory = JsonConvert.DeserializeObject<List<ExamResult>>(data);
     }
+    void See(Guid id)
+    {
+        Navigation.NavigateTo("/ResultExam/" + id);
+    }
 
     private async Task AddExamHandle()
     {
-        
+
     }
 
     private async Task DeleteExamHandle(Guid id)
@@ -79,10 +100,10 @@ else
         parameters.Add(x => x.Color, Color.Error);
 
         var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
-        
+
     }
 
-    private async Task LoadExam ()
+    private async Task LoadExam()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -93,7 +114,7 @@ else
         var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
         var response = await _httpClient.GetAsync($"/GetExams/{idUser}");
 
-       
+
     }
 
 

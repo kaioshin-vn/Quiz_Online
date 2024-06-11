@@ -28,10 +28,13 @@ else
                 <MudCardContent>
                     @foreach (var item in Questions)
                     {
-                        <p>
-                            <a class="my-4" href="/EditQuestion/@item.IdQuestion">@item.IdQuestion</a>
-                            <MudButton @onclick="() => DeleteQuestionHandle(item.IdQuestion)" Variant="Variant.Filled" Color="Color.Error">Xóa</MudButton>
-                        </p>
+                         <MudPaper Elevation="3" Class="d-flex justify-content-between align-items-center my-6 p-4">
+                             <h3>@item.ContentQuestion</h3>
+                            <div>
+                                <a class="my-4 input-group-text fw-lagre" style="background-color: rgb(42, 198, 255);" href="/EditQuestion/@item.IdQuestion"><b>CHỈNH SỬA</b></a>
+                                <MudButton @onclick="() => DeleteQuestionHandle(item.IdQuestion)" Variant="Variant.Filled" Color="Color.Error">Xóa</MudButton>
+                            </div>
+                        </MudPaper>
                     }
                 </MudCardContent>
             </MudCard>

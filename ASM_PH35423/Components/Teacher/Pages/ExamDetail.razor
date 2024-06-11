@@ -3,6 +3,7 @@
 @using ASM_PH35423.Data
 @using ASM_PH35423.Data.Tables
 @using ASM_PH35423.StaticClass
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using System.Text.RegularExpressions
 @using System.ComponentModel.DataAnnotations
@@ -17,6 +18,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
+@attribute [Authorize(Roles = "Teacher,Admin")]
 
 @if (Exam == null)
 {
@@ -93,7 +95,6 @@ else
         @if (Exam.Code == "")
         {
             <ASM_PH35423.Components.ComponentCustom.ListQuestion IdExam="IdExam"></ASM_PH35423.Components.ComponentCustom.ListQuestion>
-
         }
     </MudContainer>
 
@@ -195,6 +196,14 @@ else
 
     async Task CreateCodeExam()
     {
+        var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+        var responsed = await _httpClient.GetStringAsync($"/GetToTalQuestion/{IdExam}");
+        var toTal = Convert.ToInt16(responsed);
+        if (toTal == 0)
+        {
+            Snackbar.Add("Bài thi này chưa có câu hỏi nào , hãy thêm câu hỏi", Severity.Error);
+            return;
+        }
         var parameters = new DialogParameters<Dialog>();
         parameters.Add(x => x.ContentText, "Xác nhận mở bài thi");
         parameters.Add(x => x.ButtonText, "Mở bài thi");
@@ -210,7 +219,7 @@ else
                 var code = Guid.NewGuid().ToString();
                 var codeEncoded = ExtensionMethod.EncodeToBase64(code);
 
-                var _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
+                _httpClient = HttpClientFactory.CreateClient("MyHttpClient");
                 var response = await _httpClient.PatchAsJsonAsync($"/UpdateCodeExam/{Exam.Id}", codeEncoded);
 
 

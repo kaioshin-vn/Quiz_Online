@@ -3,6 +3,10 @@
 
 @using ASM_PH35423.Components.ComponentCustom
 @using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Teacher,Admin")]
+
 
 @inject IDialogService DialogService
 @inject IHttpClientFactory HttpClientFactory

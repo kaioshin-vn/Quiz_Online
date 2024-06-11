@@ -3,10 +3,12 @@
 @using ASM_PH35423.Data.DTO
 @using System.Text.RegularExpressions
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
 @using Newtonsoft.Json
 @using System.Net.Http.Headers
 @using System.Timers;
 
+@attribute [Authorize]
 @implements IAsyncDisposable
 @inject NavigationManager Navigation
 @inject IDialogService DialogService

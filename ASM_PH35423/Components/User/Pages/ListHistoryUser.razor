@@ -4,9 +4,12 @@
 @using System.Text.RegularExpressions
 @using ASM_PH35423.Data.DTO
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
 @using Newtonsoft.Json
 @using System.Net.Http.Headers
 @using System.Timers;
+
+@attribute [Authorize(Roles = "Student")]
 
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
@@ -16,6 +19,8 @@
 @inject ISnackbar Snackbar
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
 
 @if (ListHistory == null)
 {
@@ -44,9 +49,20 @@ else
 
             @foreach (var item in ListHistory)
             {
-            <p>
-                    <a class="my-4" href="/ExamHistory/@item.Id">@item.Id</a>
-            </p>
+                <MudPaper Elevation="3" Class="d-flex justify-content-between align-items-center my-6 p-4">
+                    <h3>
+                       Điểm số: @item.Scores 
+                    </h3>
+                    <div>
+                        <MudText >Ngày thi : <span style="color:brown">@item.TimeStart.Day-@item.TimeStart.Month-@item.TimeStart.Year</span></MudText>
+                        <p>Chính xác  : <b>@item.Info.Split('_')[0]</b></p>
+                    </div>
+                    <div>
+                        <MudButton Class=" my-3" @onclick=" () => See(item.Id)" EndIcon="@Icons.Material.Filled.GridOn" Variant="Variant.Filled" Color="Color.Tertiary">
+                            Xem
+                        </MudButton>
+                    </div>
+                </MudPaper>
             }
         </MudContainer>
     }
@@ -54,6 +70,10 @@ else
 @code {
     List<ExamHistory> ListHistory;
 
+    void See (Guid id)
+    {
+        Navigation.NavigateTo("/ExamHistory/" + id);
+    }
 
     protected override async Task OnInitializedAsync()
     {

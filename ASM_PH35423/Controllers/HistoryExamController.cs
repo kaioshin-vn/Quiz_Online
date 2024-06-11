@@ -34,7 +34,7 @@ namespace ASM_PH35423.Controllers
                 examResult.Title = b.Title;
                 examResult.DateCreate = b.CreateDate;
                 examResult.Img = b.Img;
-                examResult.PeopleCount = _context.ExamHistories.Count(a => a.IdExam == a.Id);
+                examResult.PeopleCount = _context.ExamHistories.Count(a => a.IdExam == b.Id);
 
                 return examResult;
             }).ToList();
